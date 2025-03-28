@@ -1,5 +1,7 @@
 package com.example.katturaiproj
 
+import android.icu.lang.UCharacter.toUpperCase
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -34,16 +36,25 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.katturaiproj.u.HomeScreen
 import com.example.katturaiproj.u.HomeViewModel
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun KatturaiApp(
     navController: NavController
 ){
+
+//    HandleBackButton(navController = navController) // when used here it prevents it from going to launcher
+
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = { KatturaiAppBar(scrollBehavior = scrollBehavior) }
+        topBar = {
+            KatturaiAppBar(
+                tabIndex = 0,
+                scrollBehavior = scrollBehavior,
+                navController = navController
+            ) }
     ) {
         Surface(
             modifier = Modifier.fillMaxSize()
@@ -61,11 +72,17 @@ fun KatturaiApp(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun KatturaiAppBar(
+    tabIndex : Int,
     scrollBehavior: TopAppBarScrollBehavior,
+    navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
-    val tabs = listOf("HOME", "TRENDING", "NEW", "FAVOURITES", "CATEGORIES", "AUTHORS", "TAGS")
+//    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
+    val tabs = listOf("home"
+//        , "trending", "new"
+        , "favorites", "categories",
+        "authors", "tags"
+    )
     Column(modifier = modifier) {
 
         CenterAlignedTopAppBar(
@@ -77,7 +94,7 @@ fun KatturaiAppBar(
                 )
             },
             actions = {
-                IconButton(onClick = {/*Handle search action*/ }) {
+                IconButton(onClick = {/* todo Handle search action*/ }) {
                     Icon(
                         Icons.Default.Search,
                         contentDescription = "Search",
@@ -93,15 +110,15 @@ fun KatturaiAppBar(
                 navigationIconContentColor = Color(0xffba1a1a)
             )
         )
-
+//        Log.d("Tab",selectedTabIndex.toString())
         ScrollableTabRow(
-            selectedTabIndex = selectedTabIndex,
+            selectedTabIndex = tabIndex, //selectedTabIndex
             containerColor = Color(0xffba1a1a),
             contentColor = Color(0xfff7f9ff),
             edgePadding = 0.dp,
             indicator = { tabPositions ->
                 TabRowDefaults.SecondaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[tabIndex]), //selectedTabIndex
                     height = 4.dp,
                     color = Color(0xfff7f9ff)
                 )
@@ -109,9 +126,19 @@ fun KatturaiAppBar(
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
-                    text = { Text(text = title) },
+                    selected = tabIndex == index,
+                    onClick = {
+//                        selectedTabIndex = index
+                        if(tabIndex == index){
+                            //Do Nothing
+                        }
+                        else if(index>0){
+                            navController.navigate("$title/$index")
+                        }else{
+                            navController.navigate("home")
+                        }
+                    },
+                    text = { Text(text = toUpperCase(title)) },
                     modifier = Modifier.padding(start = 36.dp, end = 36.dp)
                 )
             }

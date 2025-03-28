@@ -5,9 +5,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.katturaiproj.model.Article
-import com.example.katturaiproj.model.ArticleRequest
-import com.example.katturaiproj.model.ArticleResponse
 import com.example.katturaiproj.model.HomeItems
 import com.example.katturaiproj.network.HomeApi
 import kotlinx.coroutines.launch
