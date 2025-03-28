@@ -1,8 +1,15 @@
 package com.example.katturaiproj.u
 
+import android.util.Log
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowOverflow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,7 +21,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -41,9 +52,11 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -60,9 +73,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import com.example.katturaiproj.AppViewModelProvider
 import com.example.katturaiproj.KatturaiAppBar
 import com.example.katturaiproj.R
-import com.example.katturaiproj.model.Article
+import com.example.katturaiproj.model.Favorite.Favorite
+import com.example.katturaiproj.model.SingleArticle
+import kotlinx.coroutines.launch
+
+//import com.example.katturaiproj.model.Article
 
 
 
@@ -73,17 +91,36 @@ fun SecondScreen(
     navController: NavController,
     modifier: Modifier = Modifier
 ){
+
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+    Log.d("HOME","$id")
+    val secondScreenViewModel:SecondScreenViewModel = viewModel()
+
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = { SecondScreenAppBar(
             scrollBehavior = scrollBehavior,
-            navController = navController) }
+            navController = navController,
+            viewModel = secondScreenViewModel
+            )
+        }
     ) {
         Surface(
             modifier = Modifier.fillMaxSize()
         ) {
+
+            LaunchedEffect(Unit) {
+                secondScreenViewModel.getSingleArticleVM(id)
+            }
+
+            Log.d("ID",id.toString())
+
             SecondScreenContent(
+                singleArticle = secondScreenViewModel.updateStatus.value,
+                authorName = secondScreenViewModel.authorNameFun(),
+                navController = navController,
                 contentPadding = it
             )
         }
@@ -95,9 +132,15 @@ fun SecondScreen(
 fun SecondScreenAppBar(
     scrollBehavior: TopAppBarScrollBehavior,
     navController: NavController,
+    viewModel: SecondScreenViewModel,
     modifier: Modifier = Modifier
 ){
-    var fav by remember {   mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
+    val cid = viewModel.check(viewModel.updateStatus.value.article?.id ?: 0).collectAsState(
+        initial = Favorite(0,"","", "")
+    )
+    Log.d("SS-Fav","${cid.value}")
     TopAppBar(
         scrollBehavior = scrollBehavior,
         title = {},
@@ -112,18 +155,35 @@ fun SecondScreenAppBar(
         },
        modifier = Modifier.shadow(8.dp),
         actions = {
-            IconButton(onClick = {}){
+            IconButton(onClick = {
+
+            }){
                 Icon(
                     imageVector = Icons.Filled.Add,
                     contentDescription = "Zoom",
                     modifier = Modifier.size(32.dp)
                 )
             }
-            IconButton(onClick = {fav = !fav}) {
+            IconButton(onClick = {
+
+                coroutineScope.launch {
+                    viewModel.toggleFav(
+                        id = cid.value?.id,
+                        favorite = Favorite(
+                            id = viewModel.updateStatus.value.article?.id ?: 0,
+                            imgUrl = viewModel.updateStatus.value.article?.thumbnailUrl ?: "",
+                            title = viewModel.updateStatus.value.article?.title?:"",
+                            desc = viewModel.updateStatus.value.article?.shortDesc ?: ""
+                        )
+                    )
+                }
+
+            }
+            ) {
                 Icon(
                     imageVector = Icons.Filled.Favorite,
-                    contentDescription = "Fovorite",
-                    tint =if(fav) Color.Gray else Color.Green ,
+                    contentDescription = "Favorite",
+                    tint =if(cid.value!=null) Color.Green else Color.Gray ,
                     modifier = Modifier.size(32.dp)
                 )
             }
@@ -131,24 +191,33 @@ fun SecondScreenAppBar(
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SecondScreenContent(
+    singleArticle: SingleArticle,
+    authorName : String,
+    navController: NavController,
     contentPadding:PaddingValues,
-    modifier: Modifier = Modifier)
+    modifier: Modifier = Modifier
+)
 {
+
+    val size = singleArticle.article?.content?.size
+
     Column(modifier = modifier.verticalScroll(rememberScrollState())) {
         Spacer(
             modifier = Modifier.size(100.dp)
         )
         Text(
-            text = "06-02-2025 - தேதிக்கான ராசி பலன்!",
+            text = singleArticle.article?.title ?: "" ,
             fontSize = 24.sp,
             lineHeight = 32.sp,
             fontWeight = FontWeight.Bold,
             modifier= Modifier.padding(start = 4.dp, top = 32.dp, bottom = 12.dp)
         )
+        Log.d("IMGTH",singleArticle.article?.thumbnailUrl ?: "load")
         AsyncImage(
-            model = "https://cdn1.kadalpura.com/articles/ta/images/astrology-08112024-06.png",
+            model = "https://cdn1.kadalpura.com/articles/ta/${singleArticle.article?.thumbnailUrl}",
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxWidth().height(216.dp).padding(bottom = 12.dp)
@@ -156,16 +225,142 @@ fun SecondScreenContent(
         Row(
             modifier = Modifier.padding(bottom = 12.dp)
         ) {
-            Icon(
-                imageVector = Icons.Filled.AccountCircle,
+            AsyncImage(
+                model = "https://cdn1.kadalpura.com/articles/author_image/${singleArticle.article?.authorId}.png",
                 contentDescription = "Author",
-                modifier = Modifier.padding(start = 8.dp, end = 16.dp)
+                modifier = Modifier.size(48.dp)
+//                    .padding(start = 8.dp, end = 16.dp)
             )
             Text(
-                text = "லட்சுமி நாராயணன்  | 05/02/2025"
+                text =  authorName,  // todo date near author name
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
-        Display()
+//        Display()
+        Text(
+            text = singleArticle.article?.shortDesc ?: "",
+            textAlign = TextAlign.Center,
+            lineHeight = 32.sp,
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp,
+            modifier = Modifier.padding(top = 12.dp, bottom = 24.dp)
+        )
+
+        singleArticle.article?.content?.forEach {
+            if(it.para != ""){
+                Text(
+                    text = it.para ?: "",
+                    modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
+                    textAlign = TextAlign.Start
+                )
+            }
+            if (it.imgUrl != ""){
+                AsyncImage(
+                    model = "https://cdn1.kadalpura.com/articles/ta/${it.imgUrl}",
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth().height(216.dp).padding(bottom = 12.dp)
+                )
+            }
+        }
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if(size != null) {
+                singleArticle.article.content.get(size - 1).tagNames?.forEach {
+                    Button(
+                        onClick = {},
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Red
+                        ),
+                        modifier = Modifier.padding(4.dp)
+                    ) {
+                        Text(
+                            text = it,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+
+        HorizontalDivider(
+            color = Color.Black,
+            thickness = 0.5.dp,
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+        )
+
+        Row {
+
+            Icon(
+                imageVector = Icons.Filled.ThumbUp,
+                contentDescription = "likes",
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp)
+            )
+            Text(text = singleArticle.article?.likes.toString() ,modifier = Modifier.padding(end = 8.dp))
+
+            Icon(
+                painter = painterResource( R.drawable.baseline_thumb_down_24),
+                contentDescription = "dislikes",
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp)
+            )
+            Text(text = singleArticle.article?.dislikes.toString(), modifier = Modifier.padding(end = 8.dp))
+
+            Icon(
+                painter = painterResource( R.drawable.baseline_menu_book_24),
+                contentDescription = "Views",
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp)
+            )
+            Text(text = singleArticle.article?.viewed.toString(), modifier = Modifier.padding(end = 8.dp))
+
+            Icon(
+                imageVector = Icons.Filled.Share,
+                contentDescription = "Share" //todo implementing share option
+            )
+        }
+
+        HorizontalDivider(
+            color = Color.Black,
+            thickness = 0.5.dp,
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+        )
+
+        Row (
+            modifier = Modifier.horizontalScroll(rememberScrollState())
+        ){
+            if(size != null){
+                singleArticle.article.content[size - 3].relevance?.forEach{ item ->
+                    Column(
+                        modifier = Modifier.clickable {
+                            navController.navigate("details/${item.id}")
+                        }
+                    ) {
+                        AsyncImage(
+                            model = "https://cdn1.kadalpura.com/articles/ta/${item.thumbnailUrl}",
+                            contentDescription = "Image",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.width(300.dp).height(200.dp).padding(
+                                start = 8.dp, end = 8.dp, bottom = 12.dp
+                            )
+                        )
+                        Text(
+                            text = item.title.toString(),
+                            fontSize = 16.sp,
+                            modifier = Modifier.width(300.dp).padding(start = 8.dp, end = 12.dp)
+                        )
+                    }
+                }
+            }
+        }
+        HorizontalDivider(
+            color = Color.Black,
+            thickness = 0.5.dp,
+            modifier = Modifier.padding(top = 16.dp, bottom = 16.dp)
+        )
+
+        Spacer(modifier = Modifier.height(50.dp))
+
 
     }
 
@@ -325,4 +520,4 @@ fun Display(modifier: Modifier = Modifier){
             modifier = Modifier.padding(top = 16.dp, bottom = 16.dp)
         )
     }
-}
+} //

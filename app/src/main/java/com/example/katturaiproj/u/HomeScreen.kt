@@ -2,6 +2,7 @@ package com.example.katturaiproj.u
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -80,34 +81,56 @@ fun HomeCard(
         contentPadding = PaddingValues(16.dp)
     ) {
         items(homeItems){ item ->
-            if(item.type == 12) {
-                HomeCardSingleType12(
+            when(item.type){
+                12 ->HomeCardSingleType12(
+                    navController = navController,
+                    homeItem = item,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                4 ->HomeCardSingleType4(
+                    navController = navController,
+                    homeItem = item,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                13 ->HomeCardSingleType13(
+                    navController = navController,
+                    homeItem = item,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                14 ->HomeCardSingleType14(
                     navController = navController,
                     homeItem = item,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            if(item.type == 4){
-                HomeCardSingleType4(
-                    navController = navController,
-                    homeItem = item,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            if (item.type == 13){
-                HomeCardSingleType13(
-                    navController = navController,
-                    homeItem = item,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            if(item.type == 14){
-                HomeCardSingleType14(
-                    navController = navController,
-                    homeItem = item,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+//            if(item.type == 12) {
+//                HomeCardSingleType12(
+//                    navController = navController,
+//                    homeItem = item,
+//                    modifier = Modifier.fillMaxWidth()
+//                )
+//            }
+//            if(item.type == 4){
+//                HomeCardSingleType4(
+//                    navController = navController,
+//                    homeItem = item,
+//                    modifier = Modifier.fillMaxWidth()
+//                )
+//            }
+//            if (item.type == 13){
+//                HomeCardSingleType13(
+//                    navController = navController,
+//                    homeItem = item,
+//                    modifier = Modifier.fillMaxWidth()
+//                )
+//            }
+//            if(item.type == 14){
+//                HomeCardSingleType14(
+//                    navController = navController,
+//                    homeItem = item,
+//                    modifier = Modifier.fillMaxWidth()
+//                )
+//            }
         }
     }
 }
@@ -157,6 +180,7 @@ fun HomeCardSingleType4(
         colors = CardDefaults.cardColors(
             containerColor = Color.White,
         ),
+        onClick = {navController.navigate("details/${homeItem.id}")},
         modifier = modifier.padding(bottom = 10.dp).fillMaxSize().background(Color.White),
     ) {
 //        Text(text = homeItem.type.toString())
